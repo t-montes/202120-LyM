@@ -1,0 +1,101 @@
+local SumSqr Lst R in
+  proc {SumSqr Lst R}
+    if Lst = nil then 0
+    else 
+      List = [Car Cdr]
+      R = Car*Car + {SumSqr Cdr R}
+    end
+  end
+  {SumSqr [1 2 3 4 5] R}
+  {Show R}
+end
+
+-----------
+
+local Subtract Val Amount Main R Res in
+  proc {Subtract Val Amount R}
+    if Val >= Amount then
+      R = Val - Amount
+    else 
+      "Onlypositivenumbersallowed"
+    end
+  end
+  
+  proc {Main} 
+    R = {Subtract 9 2}
+    Res = {Subtract 5 28}
+    {Show R}
+    {Show Res}
+  end
+  {Main}
+end
+
+-----------
+
+fun {Exp X N}
+    if N == 0 then 1
+    else X * {Exp X N-1}
+    end
+end
+
+-----------
+
+{Show 3 + 2}
+
+-----------
+
+local Sum Z in
+proc {Sum X Y ?R}
+  R = X + Y
+end
+end
+
+-----------
+
+local Square X R in
+   proc {Square X R} R = X*X end
+   X=5
+   R = {Square X}
+   {Browse R}
+end
+
+-----------
+
+{Browse foo}
+
+-----------
+
+local CALCULATOR SUM MIN DIV MUL MOD MAX S M D P R MAS in
+    proc {SUM A B R} R = A + B  end
+	proc {MIN A B R} R = A - B  end
+	proc {DIV A B R} R = A div B  end
+	proc {MUL A B R} R = A * B  end
+	proc {MOD A B R} R = A mod B  end
+	proc {MAX A B R} {Max A B R}  end
+	{SUM 2 3 S}
+	{Show S}
+	{MIN 2 3 M}    
+	{Show M}
+	{DIV 2 3 D}
+    {Show D}
+	{MUL 2 3 P}
+    {Show P}
+	{MOD 17 5 R}
+    {Show R}
+	{MAX 6 9 MAS}
+    {Show MAS}
+end
+
+-----------
+
+local MEAN in
+    proc {MEAN L S C}
+        if L = [H T] then {MEAN T S+H C+1}
+        else {Show "Theaverageis:"} 
+			{Show C}
+		end
+    end
+    {MEAN [5 3 2 8 2 ~1] 0 0}
+    {MEAN [2 3 3 5 7 10] 0 0}
+end
+

@@ -1,0 +1,26 @@
+// Automaton type (ψ):
+ψ = TM
+// Turing Machine name (Z):
+Z = "calculadora"
+// Turing Machine nodes (N):
+N(0) = "L[#]C[multiplicacion]"
+N(1) = "W[Y]"
+N(2) = "L[#]C[division]"
+N(3) = "R[!1]"
+N(4) = "L[#]C[suma]"
+N(5) = "L[#]C[resta]"
+// Turing Machine initial node (I):
+I = 3@0
+// Turing Machine edges (E):
+E(3,1) = "#"
+E(3,4) = "+"
+E(3,5) = "-"
+E(3,0) = "*"
+E(3,2) = "/"
+// Turing Machine layout (ξ)
+ξ(0)=(560.00,232.00)
+ξ(1)=(383.00,304.78)
+ξ(2)=(540.00,280.00)
+ξ(3)=(384.00,212.00)
+ξ(4)=(528.00,136.00)
+ξ(5)=(532.00,184.00)

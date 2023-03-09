@@ -1,0 +1,202 @@
+/*
+ * @author: Tony Santiago Montes Buitrago
+ * El siguiente autómata cumple las funciones de verificar que la clave digitada 
+ * por un usuario en una página web cumpla con ciertos parámetros. Dichos parámetros son:
+ * - La clave está compuesta entre letras minúsculas, mayúsculas y símbolos especiales.
+ * - La longitud de la clave debe estar entre 5 y 6.
+ * - La clave debe tener por lo menos una letra mayúscula.
+ * - 	La clave debe tener un (y solo uno) símbolo especial.
+ * - La clave no puede repetir letras minúsculas.
+ * - Las letras minúsculas deben estar entre la 'a' y la 'e'.
+ * - Los símbolos especiales permitidos son {'*','/',';','#','%'}
+ */
+
+using gold.structures.automaton.*
+using gold.structures.set.*
+using gold.structures.list.*
+
+var Q:GAdaptorSet
+var Σ:GLinkedHashTableSet
+var q:GAdaptorList
+var F:GAdaptorSet
+
+var minlength:int
+var maxlength:int
+var Mins:GAdaptorSet
+var Mays:GAdaptorSet
+var Symb:GAdaptorSet
+var errstate:char
+
+procedure main(args:String[]) begin
+	/* Los siguientes elementos se pueden modificar, incluso se puede modificar el conjunto de minúsculas.
+	 * Sin embargo, para conjuntos de minúsculas muy amplios, como por ejemplo: ('a'‥'m') hay demasiados estados
+	 * entonces es posible que el programa se tome bastante tiempo antes de iniciar.
+	 */
+	minlength = 5
+	maxlength = 6
+	Mins := ('a'‥'e')
+	Mays := ('A'‥'Z')
+	Symb := {'*','/',';','#','%'}
+	errstate := 'E'
+	
+	//Alfabeto (Terminales)
+	Σ := Mins ∪ Mays ∪ Symb
+	
+	/*Lista de Estados (No-Terminales)
+	 * Cada estado (excepto el de error 'E') es una 4-tupla de la forma:
+	 * 
+	 * - Índice 1: 
+	 *	- 1 -> Ya se encontró un símbolo.
+	 * 	- 0 -> No se ha encontrado símbolo. 	
+	 *
+	 *  - Índice 2: 
+	 *	- 1 -> Ya se encontró una mayúscula.
+	 * 	- 0 -> No se ha encontrado mayúscula.
+	 * 
+	 * - Índice 3: Lista de minúsculas ya encontradas en la palabra.
+	 * 	- Ø
+	 * 	- {'a'}
+	 * 	- {'a', 'b'}
+	 * 	- {'a', 'b', 'c'}
+	 * 	- {'a', 'b', 'c', 'd'}
+	 * 	- {'a', 'c'}
+	 * 	- ‥
+	 * 
+	 * - Índice 4: Número de caracteres parseados.
+	 */
+	Q := 
+		(
+			{0,1}×
+			{0,1}×
+			getAllCombinations(Mins)×
+			(0‥maxlength)
+		) ∪ {'E'} //Estado de Error
+	
+	//Estado Inicial
+	q := ⟨0,0,Ø,0⟩
+	
+	/*Lista de Estados Terminales
+	 * Todos aquellos estados que cumplan las siguientes 3 condiciones:
+	 * - El primer índice está en 1; es decir que ya encontró un símbolo.
+	 * - El segundo índice está en 1; es decir que ya encontró una mayúscula.
+	 * - El tercer índice está entre 5 y 6; es decir que la palabra está entre este número de caracteres.
+	 */
+	F := 
+		(
+			{1}×
+			{1}×
+			getAllCombinations(Mins)×
+			(minlength‥maxlength)
+		)
+	
+	
+	A:GDeterministicAutomaton := GDeterministicAutomaton(Q, Σ, q, F, δ)
+	
+	print "Automata loaded with "+|Q|+" states and "+|Σ|+" terminals.\n"
+	
+	testFromConsole(A)
+	
+end
+
+
+/* Generador de transiciones entre estados ⟦s,t,r⟧
+ * @param s: Estado de partida
+ * @param t: Terminal de transición
+ * @return r: Estado de llegada
+ */
+function δ(s:Object,t:Object) begin
+	
+	if s=errstate then return errstate end
+	//Índice 1 
+	hassymbol = s[0]
+	//Índice 2
+	hasupper = s[1]
+	//Índice 3 - Letras minúsculas utilizadas
+	minsin = s[2]
+	//Índice 4 - Número de caracteres parseados previamente
+	n = s[3]
+	
+	/* Errores */
+	//Si ya había un símbolo especial y se encuentra otro
+	//Si el número de letras es el máximo
+	//Si se encuentra una minúscula que ya se había encontrado
+	if ((hassymbol=1) ∧ (t ∈ Symb)) ∨ 
+	   (n=maxlength) ∨ 
+	   (t ∈ minsin) 
+	   then return errstate end
+	
+	/* Aceptadas */
+	//Si encuentra un símbolo, pone el flag de símbolo (índice 1) en 1
+	//Si encuentra una mayúscula, pone el flag de mayúsculas (índice 2) en 1
+	//Si encuentra una minúscula, la agrega a la lista de minúsculas encontradas
+	return 	⟨
+			(t ∈ Symb)? 1 : hassymbol,	
+			(t ∈ Mays)? 1 : hasupper,
+			(t ∈ Mins)? minsin∪{t} : minsin,
+			n+1
+			⟩
+	
+end
+
+
+function getAllCombinations(megaset:GAdaptorSet):GAdaptorSet begin
+	combs:GAdaptorSet = {}
+	i := 0
+	while i ≤ |megaset| do
+		combs = combs ∪ getCombinationsOrderR(megaset,i)
+		i = i+1
+	end
+	return combs
+end
+
+
+function getCombinationsOrderR(set:GAdaptorSet, r:int):GAdaptorSet begin
+	ret:GAdaptorSet = {}
+	if r=0 then 
+		ret ={Ø}
+	elseif r=1 then 
+		ret = {{i}|i ∈ set}
+	else
+		prev:GAdaptorSet := getCombinationsOrderR(set,r-1)
+		i := 0
+		while i<|prev| do
+			x = prev[i]
+			y = set\x
+			ret = ret ∪ {x ∪ {j}|j ∈ y}
+			i = i+1
+		end
+	end
+	return ret
+end
+
+
+function testFromConsole(A:GDeterministicAutomaton) begin
+	teclado = java.util.Scanner(System.$in)
+	input:String = ""
+	
+	print "Welcome"
+	while true do 
+		err:boolean = false
+		print "Input word ('EXIT...' to stop):"
+		input = teclado.nextLine()
+		if input="EXIT..." then break end
+		
+		i:int := 0
+		while i<|input| do
+			if input[i] ∉ Σ then
+				print "\tERROR: character '"+input[i]+"' is not a symbol of the alphabet.\n"
+				err = true
+				break
+			end
+			i = i+1
+		end
+		
+		if ¬err then
+			valid:boolean := A.acceptsString(input)
+			print "\tthe input '"+input+"' was "+(valid? "accepted" : "rejected")+"."
+			print "\t"+(valid? "Valid" : "Not Valid")+" input.\n"
+		end
+	end
+	print "Goodbye" 
+	return null
+end

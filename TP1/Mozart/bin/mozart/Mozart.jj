@@ -1,0 +1,162 @@
+/**
+ * @author: Tony Santiago Montes Buitrago
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options
+{
+  static = true;
+}
+
+PARSER_BEGIN(Mozart)
+package mozart;
+
+public class Mozart
+{
+  public static void main(String args []) throws ParseException
+  {
+    Mozart parser = new Mozart(System.in);
+    while (true)
+    {
+      System.out.println("Reading MOZART from standard input...");
+      System.out.print("Enter an expression like \"proc {Sum A B R} R = A + B end\" :\n");
+      try
+      {
+        switch (Mozart.s())
+        {
+          case 0 : 
+          System.out.println("OK.");
+          break;
+          case 1 : 
+          System.out.println("Goodbye.");
+          break;
+          default : 
+          break;
+        }
+      }
+      catch (Exception e)
+      {
+        System.out.println("NOK.");
+        System.out.println(e.getMessage());
+        Mozart.ReInit(System.in);
+      }
+      catch (Error e)
+      {
+        System.out.println("Oops.");
+        System.out.println(e.getMessage());
+        break;
+      }
+    }
+  }
+}
+
+PARSER_END(Mozart)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+TOKEN : /* OPERATORS */
+{
+  < PLUS : "+" >
+| < MINUS : "-" >
+| < MULTIPLY : "*" >
+| < DIVIDE : "/" >
+| < EQUAL : "=">
+| < GREATER : ">" >
+| < GREATEREQUAL : ">=" > 
+}
+
+TOKEN :
+{
+  < CONSTANT : (< DIGIT >)+ >
+| < WORD : "\"" (< LOWER > | < UPPER >)* "\"" >
+| < VAR : < UPPER > (< LOWER > | < UPPER >)* > 
+| < #LOWER : ["a"-"z"] >
+| < #UPPER : ["A"-"Z"] >
+| < #DIGIT : [ "0"-"9" ] >
+}
+
+int s() :
+{}
+{
+  (
+    statement()
+  )+
+  {
+    return 0;
+  }
+}
+
+void statement() :
+{}
+{
+  operation()
+| local()
+| conditional()
+| proc()
+}
+
+void operation() :
+{}
+{
+expression()
+  (
+    (
+      < PLUS >
+    | < MINUS >
+    | < MULTIPLY >
+    | < DIVIDE >
+    | < EQUAL >
+    | < GREATER >
+    | < GREATEREQUAL >
+    )
+    expression()
+  )*
+}  
+
+void expression() :
+{}
+{
+  < CONSTANT >
+| < VAR >
+| < WORD >
+| list()
+| call()
+}
+
+void list() :
+{}
+{
+  "nil"
+| "[" (operation())* "]"
+} 
+
+void local() :
+{}
+{
+  "local" (< VAR >)+ "in" s() "end"
+}
+
+void conditional() :
+{}
+{
+  "if" operation() "then" s() "else" s() "end"
+}
+
+void proc() :
+{}
+{
+  "proc" "{" (< VAR >)+ "}" s() "end"
+}
+
+void call() :
+{}
+{
+  "{" < VAR > (operation())* "}"
+}
+
+

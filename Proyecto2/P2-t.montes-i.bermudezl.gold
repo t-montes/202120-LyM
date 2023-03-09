@@ -1,0 +1,164 @@
+/* @authors:
+ * 	Tony Santiago Montes Buitrago
+ * 	Isaac David Bermudez Lara
+ */
+
+using gold.**
+
+procedure main(args:String[]) begin
+	var sc: java.util.Scanner(System.$in)
+	
+	coder := createCoder()
+	print "Coder Loaded"
+	decoder := createDecoder()
+	print "Decoder Loaded"
+	Utilities.testCodeDecode(coder,decoder)
+end
+
+//=====================Coder=====================
+
+function createCoder():ITransducer begin
+	Q := {⟨σ,α,prev,i,d⟩ | σ ∈ ('a'‥'z'), α ∈ ('a'‥'z'), prev ∈ ('a'‥'z'), 0≤ i <3, 0≤ d <5}∪{"I","E","F"}∪
+		 ('a'‥'z')∪{⟨σ,α,null,0,0⟩ | σ ∈ ('a'‥'z'), α ∈ ('a'‥'z')}∪{⟨σ,α,':',1,0⟩ | σ ∈ ('a'‥'z'), α ∈ ('a'‥'z')}
+	Σ := ('a'‥'z')∪{':','$'}
+	Γ := ('a'‥'z')∪('A'‥'Z')∪('0'‥'4')∪{':','#'}
+	q₀ := "I"
+	F := {"F"}
+	//Transducer Mealy
+	return GDeterministicTransducer(Q,Σ,Γ,q₀,F,δc,gc,hc)
+end
+
+function δc(state,input) begin
+	if state="I" and input ∈ ('a'‥'z') then
+		return input
+	elseif state ∈ ('a'‥'z') and input ∈ ('a'‥'z') then
+		// ⟨σ = el elemento que leyó , α = el elemento que lee , prev = no hay , i = no se conoce , d = no se conoce⟩
+		return ⟨state,input,null,0,0⟩
+	else
+		return "E"
+	end
+end
+
+function δc(⟨σ,α,prev,i,d⟩,input) begin
+	i = (i+1)%3
+	return (
+		input = '$' ? "F" : (
+		(prev = null and input ≠ ':') or (prev ≠ null and input = ':') ? "E" : 
+		⟨σ,α,input,i,(input ∈ {σ,α} ? (d+1)%5 : d)⟩
+	))
+end
+
+function hc(state,input) begin
+	return (((state = "I") or (state ∈ ('a'‥'z'))) and input ≠ '$' ? input : "")
+end
+
+function hc(⟨σ,α,prev,i,d⟩,input) begin
+	if input = '$' then
+		return Character.forDigit(d,10)
+	else
+		switch input begin
+			case ':':
+				return input
+			case σ:
+				return α
+			case α:
+				return σ
+			case prev:
+				return '#'
+			default:
+				switch i begin
+					case 1:
+						//Mayúscula de la siguiente letra
+						ord:int = input
+						chr:char = 65+((ord-96)%26)
+						return chr
+					case 2:
+						//Mayúscula de la letra
+						ord:int = input
+						chr:char = 65+((ord-97)%26)
+						return chr
+					default:
+						return input
+				end
+		end
+	end
+end
+
+function gc(state) begin
+	return λ
+end
+
+//=====================Decoder=====================
+
+function createDecoder():ITransducer begin
+	Q := {⟨σ,α,prev,i⟩ | σ ∈ ('a'‥'z'), α ∈ ('a'‥'z'), prev ∈ ('a'‥'z'), 0≤ i <3}∪{"I","E","F"}∪
+		 ('a'‥'z')∪{⟨σ,α,null,0⟩ | σ ∈ ('a'‥'z'), α ∈ ('a'‥'z')}∪{⟨σ,α,':',1⟩ | σ ∈ ('a'‥'z'), α ∈ ('a'‥'z')}
+	Σ := ('a'‥'z')∪('A'‥'Z')∪('0'‥'4')∪{':','#'}
+	Γ := ('a'‥'z')∪{':','$'}
+	q₀ := "I"
+	F := {"F"}
+	//Transducer Mealy
+	return GDeterministicTransducer(Q,Σ,Γ,q₀,F,δd,gd,hd)
+end
+
+function δd(state,input) begin
+	if state="I" and input ∈ ('a'‥'z') then
+		return input
+	elseif state ∈ ('a'‥'z') and input ∈ ('a'‥'z') then
+		// ⟨σ = el elemento que leyó , α = el elemento que lee , prev = no hay , i = no se conoce , d = no se conoce⟩
+		return ⟨state,input,null,0⟩
+	else
+		return "E"
+	end
+end
+
+function δd(⟨σ,α,prev,i⟩,input:char) begin
+	var ρ:char
+	if (prev = null and input ≠ ':') or (prev ≠ null and input = ':') then
+		return "E"
+	elseif prev = null then
+		ρ = ':'
+	elseif input ∈ ('0'‥'4') then
+		return "F"
+	elseif input = σ then
+		ρ = α
+	elseif input = α then
+		ρ = σ
+	elseif input = '#' then
+		if prev = ':' then
+			return "E"
+		end
+		ρ = prev
+	elseif input ∈ ('A'‥'Z') then
+		switch i begin
+			case 1:
+				//Minúscula de la anterior letra
+				ord:int = input
+				ρ = 97+((ord-66)%26)
+			case 2:
+				//Minúscula de la letra
+				ord:int = input
+				ρ = 97+((ord-65)%26)
+			default:
+				//No debería haber mayúsculas en esta posición
+				return "E"
+		end
+	else
+		ρ = input
+	end
+	i = (i+1)%3
+	return ⟨σ,α,ρ,i⟩
+end
+
+function hd(state,input) begin
+	return (((state = "I") or (state ∈ ('a'‥'z'))) and input ∉ ('0'‥'4')∪('A'‥'Z')∪{'#'} ? input : "")
+end
+
+function hd(⟨σ,α,prev,i⟩,input) begin
+	return prev
+end
+
+function gd(state) begin
+	return state = "F" ? '$' : λ
+end
+

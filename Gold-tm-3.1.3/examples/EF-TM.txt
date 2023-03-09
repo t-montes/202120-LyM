@@ -1,0 +1,9 @@
+// Automaton type (ψ):
+ψ = TM
+// Turing Machine name (Z):
+Z = "TM2"
+// Turing Machine nodes (N):
+// Turing Machine initial node (I):
+I = -1@0
+// Turing Machine edges (E):
+// Turing Machine layout (ξ)

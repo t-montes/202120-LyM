@@ -1,0 +1,532 @@
+using gold.**
+
+var currentString: String
+var images: GArrayList()
+
+var allSymbols: ISet
+var keyWords: ISet
+var skipChars: ISet
+
+var preKW : ISet
+var preOps :ISet
+
+var StartOps:ISet
+var Symbols1: ISet
+
+var CharsSymbols1: ISet
+
+var alphaUpper:ISet
+var alphaLower :ISet
+var digits :ISet
+
+var alphaNum : ISet
+
+var Out : ISet
+var diffIdents : Boolean
+
+var Ids: ISet
+var translation : GHashTableMap()
+    
+chars(string:String) :=  {string.charAt(i)| 0 <= i <string.length() }
+
+
+charsStrings(strings) := (∪ s | s ∈ strings: chars(s) )
+
+
+elements(array) :=  {array[i]| 0 <= i < |array| }
+         
+prefixes(string:String) := {string.substring(0,i)| 1 <= i <= string.length() }
+splits(string:String):= { ⟨string.substring(0,i),string.substring(i,string.length())⟩| 1 <= i <= string.length()-1 }
+
+allPrefixes(strings):= (∪ s | s ∈ strings: prefixes(s) )
+
+translationGet(q) :=  ((|q|=1 and q ∈ Symbols1 and q != '\n')?q:translation.get(q))
+ 
+procedure main(args:String[]) begin
+	currentString := λ
+	lexer = createTransducer()
+	parser = createAutomaton()
+	//testLexer(lexer)
+	GAutomataFrame.show(parser)
+	testLexerParser(lexer,parser)
+end
+  
+  
+procedure testLexer(M:ITransducer) begin
+	var sc:java.util.Scanner(System.$in)
+    var string:String	
+    
+    
+    
+    inputA = elements(M.getInputAlphabet())
+    
+    
+	input = ""
+		
+		
+		print "----------------------------"
+		print "Enter one or more lines. End with a single line with $"
+       print "If you want to stop testing, enter EXIT"
+       string:=sc.nextLine() 
+       
+
+
+
+	while string != "EXIT" do
+		
+	   string := string + " \n "	
+       input := ""
+       while string.charAt(0) != '$' do
+              input := input + string 
+              string:=sc.nextLine() + " \n  "
+       end
+       
+       if chars(input) ⊆ inputA then
+           currentString :=  λ
+           images := GArrayList()
+       	result:=M.acceptsString(input)    
+			tokenStream := M.getOutputString()
+		    
+		
+			print "The input was "+(result?"":"not ")+" accepted by the lexer."
+			if result then 
+				print "Token Stream:  "+ tokenStream 
+			   print "Strings: "+images
+			
+			else print "Partial token Stream "+ tokenStream 
+			end
+			else print "Input contains invalid characters: "+ (chars(input) \ inputA)
+		end
+       print "----------------------------"
+	
+	   print "Enter one or more lines. End with a single line with $"
+       print "If you want to stop testing, enter EXIT"
+       string:=sc.nextLine()
+       
+end
+print  "Good bye"
+print  ""
+
+end 
+
+
+  
+ 
+ 
+ 
+ function problems(q: String) begin
+    
+    
+    if q in allSymbols then return false
+    elseif |q|≤1  then return true
+    else
+    	for each ⟨s,t⟩ in splits(q) do
+         if not problems(s) and not problems(t) then return false end
+       end
+       return true
+	end
+   	
+ end
+ 
+ 
+ 	
+ 	
+ 	function translationPreOps(state) begin
+ 	 var x, y
+ 	 var q: String
+ 	 q:= state
+ 	 n := q.length()
+ 	 if n=0 then return λ
+ 	 elseif q  ∈ allSymbols then 
+ 	 	images.add(q)
+ 	 	return translationGet(q)  
+ 	 elseif n=1 then return λ
+ 	 else  
+ 	 	 for each ⟨s,t⟩ in splits(q) do
+ 	     	x:=translationPreOps(s)
+       	y:=translationPreOps(t) 
+          	if x≠ λ  and  y≠λ then 
+            return x+y end
+        end
+        
+ 	    return   λ
+ 	     
+   end
+
+ end
+ 	
+ 	
+ 	
+ 
+ procedure initialize() begin
+ 
+ 
+ 
+     
+ // **************  
+	skipChars := {' ', '\t'}
+	alphaUpper := ('A'‥'Z')
+
+    alphaLower := ('a' ‥ 'z') 
+	digits :=  ('0'‥'9')
+	alphaNum := alphaUpper ∪ alphaLower ∪ digits  ∪ {'?'}      // Alphanumeric characters
+	keyWords := {"MOVE","ROTATE", "RIGHT","LEFT","LOOK", "FREE", "DROP", "PICK","POP","CHECK","NOP","BLOCKEDP",
+	              "IF","DEFINE","REPEAT","TO","BLOCK",
+	              "N","S","W","E","C", "B"}  // keywords
+	allSymbols := {"(",")","\n","]", "[", "!" }
+	
+	
+	// Symbols  and brackets, both single char and  multicharacter
+	
+	
+	
+	
+	// TRANSLATION FOR ALL STRINGS IN KEYWORDS
+	
+	// Operators can be translated as themselves
+	//  See
+	  
+	  translation.put("\n",'⋈') 
+	 
+	 translation.put("N",'N')
+	 translation.put("S",'S')
+	 translation.put("W",'W')
+	 translation.put("E",'E')
+	 translation.put("C",'C')
+	 translation.put("B",'B')
+	 
+	 translation.put("NOP",'K')
+	 translation.put("Num",'#')
+	
+	translation.put("MOVE",'M') 
+	translation.put("RIGHT",'r') 
+	translation.put("LEFT",'l') 
+	translation.put("ROTATE",'R') 
+	 
+	 translation.put("LOOK",'L') 
+	 translation.put("DROP",'D') 
+	
+	 translation.put("FREE",'F') 
+	 translation.put("PICK",'P') 
+	 translation.put("POP",'p') 
+	 translation.put("CHECK",'c') 
+	 translation.put("BLOCKEDP",'w') 
+	 translation.put("BLOCK",'b') 
+	 
+	 
+	 
+	 translation.put("REPEAT",'X')
+	 
+	 
+	 translation.put("IF",'?') 
+	 translation.put("DEFINE",'d') 
+	 translation.put("TO",'T') 
+	 translation.put("OUTPUT",'O') 
+	 translation.put("END",'$') 
+	 
+	 
+	 
+	 translation.put("IdL",'v')  
+	 translation.put("IdU",'V')  //if  there is no difference between names that start with caps and those that don't,
+	    							//assign the same translation
+	 
+	  translation.put("Param",'x')
+	 
+	
+	 // **************
+	 
+	    
+	
+end
+
+
+
+function createTransducer():ITransducer begin
+	
+   initialize()
+	
+	preOps := allPrefixes(allSymbols)
+ 	preKW  := allPrefixes(keyWords)
+ 	
+	StartOps := (∪ x | x ∈ allSymbols: {x.charAt(0)} ) 
+	Symbols1 := ((∪ x | x ∈ StartOps: {""+x} ) ∩ allSymbols) \ {"\n"}
+	CharsSymbols1 := (∪ x | x ∈ Symbols1: {x.charAt(0)} )
+	
+	
+	Out   := 	CharsSymbols1 ∪ (∪ x | x ∈ translation.values(): {x} )
+
+	print Out
+   Ids:= {"IdU","IdL", "Param"}
+
+   Q:= {"I","IdU","Num","Err","IdL","Param"} ∪ preKW ∪ preOps 
+	
+	print Q
+	
+	Σ:= alphaNum ∪ charsStrings(allSymbols) ∪ skipChars 
+	∪ {':'}
+	
+	 
+	q₀:="I"
+	F:= {"I"}
+	return 	GDeterministicTransducer(Q,Σ,Out,q₀,F,δ,g,h)
+end
+
+function δ(state,σ) begin
+  
+ 
+   var q: String
+   q := state
+   
+   if q = "Err" then return "Err" 
+   elseif q ∈ preOps  then
+ 		if q+σ in preOps then   return q+σ 
+     	elseif problems(q) then  return "Err"
+    	elseif σ ∈ skipChars  then return "I"	
+     	elseif  σ in ('0'‥'9') then  return "Num"
+       elseif  λ+σ in preKW then return λ+σ
+       elseif  σ in alphaUpper  then return "IdU"	
+       elseif  σ in alphaLower  then return "IdL"	
+       elseif  λ+σ in preOps then	 return λ+σ
+       else return "Err"
+  		end	  	
+	elseif  σ ∈ skipChars then return "I"	
+    elseif q="I" and  σ in ('0'‥'9') then  return "Num"
+    elseif q="I" and  λ+σ in preKW then return λ+σ
+    elseif q = "I" and σ in alphaUpper  then return "IdU"
+    elseif q = "I" and σ in alphaLower  then return "IdL"	
+    elseif q = "I" and σ = ':'   then return "Param"	
+    elseif q = "I" and  λ+σ in preOps then	 return λ+σ
+    elseif q ∈ preKW  and (q+σ) in preKW then return q+σ 	
+    elseif q ∈ preKW and σ in alphaNum  and q.charAt(0) ∈ alphaUpper then return "IdU"
+    elseif q ∈ preKW and σ in alphaNum  and q.charAt(0) ∈ alphaLower then return "IdL"
+    elseif q ∈ preKW  and  λ+σ in preOps then	 return λ+σ
+    elseif q = "Num" and  σ in ('0'‥'9') then  return "Num"
+    elseif q = "Num" and  λ+σ in preOps  then return λ+σ
+     elseif q = "Num" and σ in alphaNum  then return "Err"	
+    elseif q ∈ Ids  and σ in alphaNum  then return q
+    elseif q ∈ Ids and  λ+σ in preOps  then return λ+σ
+    else return "Err"
+end	
+end 
+
+ 
+
+
+function g(q) begin
+	return λ
+end
+
+function h(q,σ) begin
+	var s: String
+	
+	
+	s :=(σ = '\n')?"\\n": (λ+σ)
+    
+    
+  if q ∈ preOps  then
+       if σ ∈ skipChars and q ∈ allSymbols then 
+       	images.add(currentString)
+       	currentString := λ
+       	return translationGet(q)
+       elseif q+σ in preOps then 
+       	currentString := currentString + s
+       	return λ
+       elseif σ ∈ (StartOps ∪ alphaNum) and q ∈ allSymbols then 
+       	images.add(currentString)
+       	currentString := λ  + s
+       	return translationGet(q)
+      elseif σ ∈ (StartOps ∪ alphaNum ∪ skipChars)  then 
+      	   currentString := λ  + s
+      	   return translationPreOps(q)
+       else	
+       	currentString := currentString + s
+       	return λ
+       end
+     
+     
+   elseif q ∉ {"Err"} and σ ∈ skipChars  ∪ StartOps then
+		if q="I" then 
+		    currentString := (σ ∈ StartOps)? s:λ
+			return λ
+    	elseif translationGet(q)=null then 
+					/// debugging          if currentString = λ then  print "Why???? "+ q end
+          
+         
+        
+          images.add(currentString)
+          currentString := (σ ∈ skipChars  ∪ StartOps)?s:λ
+       	 
+       	 f= q.charAt(0)
+       	 if f in alphaUpper then return translationGet("IdU")
+       	 else 
+       	 return translationGet("IdL")
+       	end
+    	else 
+    		
+    		images.add(currentString)
+       	currentString := (σ ∈ skipChars  ∪ StartOps)?s:λ
+    		return translationGet(q)
+    	end
+ 		
+ 		
+ 		
+    else 
+    	 currentString := currentString + s
+    	return  λ
+
+end
+end
+
+///====   mini Parser===
+
+function createAutomaton():IPushdownAutomaton begin
+	Terms := Out
+	NonTerms := {'α','β','σ','π','ρ'} ∪ ('0'‥'9')
+	
+	Q:= {"I","q","F"}
+	Σ:= Terms
+	Γ:= Terms ∪ NonTerms ∪ {'$'}
+	q₀:= "I"
+	F:= {"F"}
+	M:=GPushdownAutomaton(Q,Σ,Γ,q₀,F)
+	
+	M.delta("I","q","").push("$α")
+	M.delta("q","F","").pop("$")
+
+	for each x in Out do
+	  M.delta("q","q",""+x).pop(""+x)
+	end
+	
+	M.delta("q","q","").changeTop("α","")
+	M.delta("q","q","").changeTop("α","α")
+	M.delta("q","q","").changeTop("α","β")
+	M.delta("q","q","").changeTop("α","⋈")
+	M.delta("q","q","").changeTop("α","αβ")
+	M.delta("q","q","").changeTop("α","α⋈")
+	M.delta("q","q","").changeTop("α","⋈β")
+	M.delta("q","q","").changeTop("α","α⋈β")
+	
+	M.delta("q","q","").changeTop("β","0")
+	M.delta("q","q","").changeTop("β","1")
+	M.delta("q","q","").changeTop("β","2")
+	M.delta("q","q","").changeTop("β","3")
+	M.delta("q","q","").changeTop("β","4")
+	M.delta("q","q","").changeTop("β","5")
+	M.delta("q","q","").changeTop("β","6")
+	M.delta("q","q","").changeTop("β","7")
+	M.delta("q","q","").changeTop("β","8")
+	M.delta("q","q","").changeTop("β","π")
+	
+	M.delta("q","q","").changeTop("σ","σx")
+	M.delta("q","q","").changeTop("σ","")
+	
+	M.delta("q","q","").changeTop("9","v")
+	M.delta("q","q","").changeTop("9","V")
+	M.delta("q","q","").changeTop("9","#")
+	M.delta("q","q","").changeTop("9","x")
+	
+	M.delta("q","q","").changeTop("1","9M")
+	M.delta("q","q","").changeTop("1","9r")
+	M.delta("q","q","").changeTop("1","9l")
+	M.delta("q","q","").changeTop("1","9R")
+	M.delta("q","q","").changeTop("1","9D")
+	M.delta("q","q","").changeTop("1","9F")
+	M.delta("q","q","").changeTop("1","9P")
+	M.delta("q","q","").changeTop("1","9p")
+	
+	M.delta("q","q","").changeTop("2","NL")
+	M.delta("q","q","").changeTop("2","EL")
+	M.delta("q","q","").changeTop("2","WL")
+	M.delta("q","q","").changeTop("2","SL")
+	
+	M.delta("q","q","").changeTop("3","w")
+	M.delta("q","q","").changeTop("3","9Bc")
+	M.delta("q","q","").changeTop("3","9Cc")
+	M.delta("q","q","").changeTop("3","w!")
+	M.delta("q","q","").changeTop("3","9Bc!")
+	M.delta("q","q","").changeTop("3","9Cc!")
+	
+	M.delta("q","q","").changeTop("4","K")
+	
+	M.delta("q","q","").changeTop("5","9Vd")
+	M.delta("q","q","").changeTop("5","9vd")
+	
+	M.delta("q","q","").changeTop("6","]α[3?")
+	
+	M.delta("q","q","").changeTop("7","]α[9X")
+	
+	M.delta("q","q","").changeTop("8",")αb(")
+	
+	M.delta("q","q","").changeTop("0","$αO⋈σVT")
+	M.delta("q","q","").changeTop("0","$αO⋈σvT")	
+	
+	M.delta("q","q","").changeTop("π","ρv")	
+	
+	M.delta("q","q","").changeTop("ρ","")
+	M.delta("q","q","").changeTop("ρ","ρ9")	
+	
+return M
+end
+
+
+procedure testLexerParser(M:ITransducer, P:IPushdownAutomaton) begin
+	var sc:java.util.Scanner(System.$in)
+    var string:String	
+    
+    
+    
+    inputA = elements(M.getInputAlphabet())
+    
+    
+	input = ""
+		
+		
+		print "----------------------------"
+		print "Enter one or more lines. End with a single line with $"
+       print "If you want to stop testing, enter EXIT"
+       string:=sc.nextLine() 
+       
+
+
+
+	while string != "EXIT" do
+		
+	   string := string + "  \n "	
+       input := ""
+       while string.charAt(0) != '$' do
+              input := input + string 
+              string:=sc.nextLine() + " \n "
+       end
+       
+       if chars(input) ⊆ inputA then
+           currentString :=  λ
+           images := GArrayList()
+       	result:=M.acceptsString(input)
+			tokenStream := M.getOutputString()
+		
+			print "The input was "+(result?"":"not ")+" accepted by the lexer."
+			if result then 
+				print "Token Stream:  "+ tokenStream 
+			   print "Strings: "+images
+			   result:=P.acceptsString(tokenStream )
+         		print "Parser result: "+(result?"accepted ":"rejected ")
+			
+			else print "Partial token Stream "+ tokenStream 
+			end
+			else print "Input contains invalid characters: "+ (chars(input) \ inputA)
+		end
+       print "----------------------------"
+	
+	   print "Enter one or more lines. End with a single line with $"
+       print "If you want to stop testing, enter EXIT"
+       string:=sc.nextLine()
+       
+end
+print  "Good bye"
+print  ""
+
+end 
+
+
+
+
